@@ -203,19 +203,19 @@ CopyEdit
 ```
 
 ## Postman Test Case
-•	Method: POST
-•	URL: https://your-instance.service-now.com/api/x_custom/submit_catalog_items
-•	Auth: Basic Auth
-•	Headers:
-o	Content-Type: application/json
-•	Body: Raw JSON (see request payload above)
+- Method: POST
+- URL: https://your-instance.service-now.com/api/x_custom/submit_catalog_items
+- Auth: Basic Auth
+- Headers:
+-	Content-Type: application/json
+- Body: Raw JSON (see request payload above)
 
 ## Why It Supports Variable Catalog Items
-•	Each catalog item may have different variable names and count.
-•	The addItem() method in ServiceNow automatically maps provided variables.
-•	Missing variables fall back to defaults defined in the item definition.
-•	Excess variables are safely ignored.
-•	This ensures flexibility and robustness for any number of items or variable structures.
+- Each catalog item may have different variable names and count.
+- The addItem() method in ServiceNow automatically maps provided variables.
+- Missing variables fall back to defaults defined in the item definition.
+- Excess variables are safely ignored.
+- This ensures flexibility and robustness for any number of items or variable structures.
 
 ## Error Handling
 Condition	Status Code	Response Status
@@ -226,16 +226,16 @@ Cart order failed	200	status: failed_to_submit_order
 Success	200	status: submitted
 
 ## Developer Tips
-•	Use scoped API names (e.g., x_custom.submit_catalog_items) for isolation.
-•	Consider validating variable keys against the sc_item_option_mtom table.
-•	For traceability, log requester email, catalog item ID, and status.
-•	Use gs.info() in dev/test environments to trace issues.
+- Use scoped API names (e.g., x_custom.submit_catalog_items) for isolation.
+- Consider validating variable keys against the sc_item_option_mtom table.
+- For traceability, log requester email, catalog item ID, and status.
+- Use gs.info() in dev/test environments to trace issues.
 
 ## Future Enhancements
-•	✅ RITM numbers in response
-•	✅ Retry logic for failed items
-•	✅ Attachment support
-•	✅ Validation of variable sets before submission
-•	✅ Notify requesters via email or MS Teams
+- ✅ RITM numbers in response
+- ✅ Retry logic for failed items
+- ✅ Attachment support
+- ✅ Validation of variable sets before submission
+- ✅ Notify requesters via email or MS Teams
 
 
