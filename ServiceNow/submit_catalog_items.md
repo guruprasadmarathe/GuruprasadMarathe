@@ -52,7 +52,7 @@ Charlie (a conversational bot) currently cannot orchestrate multiple sequential 
   ]
 }
 
----
+```
 
 requester: User’s email address to resolve sys_user.sys_id.
 
@@ -63,7 +63,7 @@ catalog_id: Sys ID of the catalog item.
 quantity: Number of items to request (default 1).
 
 variables: Key-value pairs matching catalog item variables.
-
+```json
 {
   "requester": "user@example.com",
   "results": [
@@ -79,6 +79,7 @@ variables: Key-value pairs matching catalog item variables.
   ]
 }
 
+```
 
 status can be:
 
@@ -88,8 +89,8 @@ failed_to_add_to_cart: Could not add catalog item.
 
 failed_to_submit_order: Cart order submission failed.
 
-Scripted REST API Script
-
+## Scripted REST API Script
+```json
 
 (function process(request, response) {
   try {
@@ -153,39 +154,88 @@ Scripted REST API Script
 })(request, response);
 
 
+```
 
-Testing Instructions
-Using Postman or any REST client:
-Set POST method to https://<your_instance>.service-now.com/api/x_custom/submit_catalog_items
+## Example Request Payload
+```json
 
-Use Basic Auth with a valid ServiceNow integration user.
+{
+  "requester": "john.doe@example.com",
+  "items": [
+    {
+      "catalog_id": "CATALOG_ITEM_SYS_ID_1",
+      "quantity": 1,
+      "variables": {
+        "request_type": "New Laptop",
+        "urgency": "High"
+      }
+    },
+    {
+      "catalog_id": "CATALOG_ITEM_SYS_ID_2",
+      "variables": {
+        "comments": "Need external monitor",
+        "approval_required": "true"
+      }
+    }
+  ]
+}
 
-Set Content-Type header to application/json.
 
-Paste request JSON (see above) in the request body.
+## Example Response
+```json
+CopyEdit
+{
+  "requester": "john.doe@example.com",
+  "results": [
+    {
+      "catalog_id": "CATALOG_ITEM_SYS_ID_1",
+      "status": "submitted",
+      "request_id": "REQ0012345"
+    },
+    {
+      "catalog_id": "CATALOG_ITEM_SYS_ID_2",
+      "status": "submitted",
+      "request_id": "REQ0012346"
+    }
+  ]
+}
 
-Send the request.
+```
 
-Review the response for success or error statuses.
+## Postman Test Case
+•	Method: POST
+•	URL: https://your-instance.service-now.com/api/x_custom/submit_catalog_items
+•	Auth: Basic Auth
+•	Headers:
+o	Content-Type: application/json
+•	Body: Raw JSON (see request payload above)
 
-Notes for Developers
-The API automatically resolves the user email to sys_id.
+## Why It Supports Variable Catalog Items
+•	Each catalog item may have different variable names and count.
+•	The addItem() method in ServiceNow automatically maps provided variables.
+•	Missing variables fall back to defaults defined in the item definition.
+•	Excess variables are safely ignored.
+•	This ensures flexibility and robustness for any number of items or variable structures.
 
-The Cart API handles variable mapping; unsupported variables are ignored.
+## Error Handling
+Condition	Status Code	Response Status
+Invalid requester email	400	{ "error": "Invalid requester email" }
+System or scripting error	500	{ "error": "error message" }
+Item failed to add to cart	200	status: failed_to_add_to_cart
+Cart order failed	200	status: failed_to_submit_order
+Success	200	status: submitted
 
-You can submit multiple items at once, each with its own variables.
+## Developer Tips
+•	Use scoped API names (e.g., x_custom.submit_catalog_items) for isolation.
+•	Consider validating variable keys against the sc_item_option_mtom table.
+•	For traceability, log requester email, catalog item ID, and status.
+•	Use gs.info() in dev/test environments to trace issues.
 
-Handle error statuses gracefully in your integration.
+## Future Enhancements
+•	✅ RITM numbers in response
+•	✅ Retry logic for failed items
+•	✅ Attachment support
+•	✅ Validation of variable sets before submission
+•	✅ Notify requesters via email or MS Teams
 
-Log request and response for troubleshooting.
 
-Future Enhancements
-Add OAuth 2.0 support.
-
-Return RITM (Requested Item) numbers.
-
-Validate variable keys before adding to cart.
-
-Retry failed submissions automatically.
-
-Support attachments for catalog items.
