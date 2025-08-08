@@ -1,17 +1,17 @@
-# Submit Catalog Items API
+# One Step: Submit Catalog Items API (Single API Call)
 
 ## Overview
 
 This ServiceNow Scripted REST API enables a single API call to submit one or multiple catalog items on behalf of a user, streamlining the standard multi-step process.
 
-Charlie (a conversational bot) currently cannot orchestrate multiple sequential API calls required by ServiceNow (resolve user sys_id, add item to cart, submit order). This API handles all these steps internally to provide a seamless conversational experience.
+Bots (a conversational bot) currently cannot orchestrate multiple sequential API calls required by ServiceNow (resolve user sys_id, add item to cart, submit order). This API handles all these steps internally to provide a seamless conversational experience.
 
 ---
 
 ## Why Use This API?
 
 - Simplifies multiple API calls into one.
-- Enables Charlie to submit catalog item requests directly.
+- Enables BOTs to submit catalog item requests directly.
 - Supports multiple catalog items with varying variables.
 - Handles dynamic catalog items without breaking.
 - Improves end-user experience by removing manual steps.
@@ -24,7 +24,7 @@ Charlie (a conversational bot) currently cannot orchestrate multiple sequential 
 |-------------------|------------------------------------------------------------------------|
 | **Method**        | `POST`                                                                |
 | **Endpoint**      | `/api/x_custom/submit_catalog_items`                                 |
-| **Authentication**| Basic Auth with a ServiceNow integration user having `rest_service` and `catalog_admin` roles |
+| **Authentication**| OAuth 2.0 a ServiceNow integration user having `rest_service` and `catalog_admin` roles |
 | **Content-Type**  | `application/json`                                                     |
 
 ---
