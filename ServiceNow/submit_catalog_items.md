@@ -180,7 +180,7 @@ failed_to_submit_order: Cart order submission failed.
   ]
 }
 
-
+```
 ## Example Response
 ```json
 CopyEdit
