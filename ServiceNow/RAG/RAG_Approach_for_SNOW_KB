@@ -1,0 +1,155 @@
+
+# 🚀 Implementing RAG for a ServiceNow Knowledge Base
+
+Modern enterprises are moving from **keyword search** to **semantic retrieval** for their knowledge bases.  
+If you’re running a **ServiceNow Knowledge Base (KB)**, you can supercharge it with a **Retrieval-Augmented Generation (RAG)** pipeline that makes answers contextual, conversational, and secure.  
+
+This article outlines how to design and implement a **RAG-powered KB search** with industry-standard practices, tools, and step-by-step guidance.
+
+---
+
+## 🔎 Why RAG for Knowledge Bases?
+
+- **Traditional search** (BM25/ElasticSearch) → fast, cheap, but only keyword-based.  
+- **Vector search (RAG)** → semantic, understands intent, but requires embeddings & compute.  
+- **Best practice today** → **Hybrid search (BM25 + Vector + Reranker)** for accuracy + efficiency.
+
+---
+
+## 🏗️ Architecture at a Glance
+
+![Architecture](architecture.png)
+
+---
+
+## ⚙️ Tools of the Trade
+
+- **Source**: ServiceNow Knowledge Management + Attachment APIs  
+- **Ingestion/Orchestration**: Python, LangChain / LlamaIndex / Haystack  
+- **Vector DB / Index**:  
+  - Managed → Azure AI Search (BM25 + HNSW + RRF)  
+  - OSS → Qdrant / Weaviate / OpenSearch (BM25 + k-NN)  
+- **Embeddings**: OpenAI / HuggingFace models (e.g., `text-embedding-3-large`, `bge-large`)  
+- **Reranker**: Cohere Rerank API or open-source BGE cross-encoder  
+- **LLM**: Azure OpenAI, Anthropic, or local model  
+- **OCR (if needed)**: Azure Document Intelligence, AWS Textract, Google Document AI  
+- **Evaluation**: Ragas, DeepEval  
+
+---
+
+## 📖 Step-by-Step Implementation
+
+### 1. Extract (ServiceNow → Pipeline)
+- Use **ServiceNow Table API** (`kb_knowledge`) for articles.  
+- Use **Attachment API** for PDFs/images.  
+- Pull incremental updates using `sys_updated_on`.  
+
+### 2. Transform & Chunk
+- Clean HTML → Markdown/Text.  
+- Split into 300–800 token chunks with small overlaps.  
+- Attach metadata:  
+  - KB ID, Article number, sys_id  
+  - Categories, language  
+  - **User Criteria** (for ACL/security)  
+
+### 3. Embed
+- Generate vector embeddings for each chunk.  
+- Store vectors + metadata.  
+
+### 4. Index
+- Create **hybrid index**:  
+  - Keyword (BM25) for lexical match.  
+  - Vector (HNSW) for semantic match.  
+  - Apply filters (KB, category, ACL groups).  
+
+### 5. Retrieve
+- Run **keyword + vector search in parallel**.  
+- Fuse results with **Reciprocal Rank Fusion (RRF)**.  
+- Apply **ACL filters** so users only see what they are allowed.  
+
+### 6. Rerank
+- Take top 50–100 results.  
+- Re-score with **Cohere Rerank** or **BGE cross-encoder**.  
+- Keep top 8–12 chunks.  
+
+### 7. Generate
+- Build prompt for LLM:  
+  - “Answer using only the provided KB context.”  
+  - “Cite article number/title and provide ServiceNow links.”  
+- Return answer with references.  
+
+### 8. Evaluate
+- Use **Ragas / DeepEval** to measure:  
+  - Retrieval relevance  
+  - Faithfulness to KB  
+  - Answer helpfulness  
+
+### 9. Keep Fresh
+- Schedule incremental syncs (e.g., every hour).  
+- Or push updates with ServiceNow Business Rules / Webhooks.  
+
+---
+
+## 🔐 Security Considerations
+- Respect **ServiceNow User Criteria**:  
+  - Sync KB ACLs into your index metadata.  
+  - Apply user group filters at retrieval time.  
+- Always enforce **row-level security** so answers never leak across KB boundaries.  
+
+---
+
+## 🛠️ Example Mini-Pipeline (Python + LangChain)
+
+```python
+import requests, html2text
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from openai import OpenAI
+
+BASE = "https://yourinstance.service-now.com"
+auth = ("api_user", "token")
+
+# Step 1: Extract
+resp = requests.get(f"{BASE}/api/now/table/kb_knowledge",
+    params={"sysparm_fields":"sys_id,number,short_description,text,sys_updated_on"},
+    auth=auth)
+articles = resp.json()["result"]
+
+# Step 2: Transform + Chunk
+splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+def clean(html): return html2text.HTML2Text().handle(html or "")
+
+docs = []
+for art in articles:
+    chunks = splitter.split_text(clean(art["text"]))
+    for i, c in enumerate(chunks):
+        docs.append({
+            "id": f"{art['sys_id']}-{i}",
+            "text": c,
+            "metadata": {"number": art["number"], "sn_id": art["sys_id"]}
+        })
+
+# Step 3: Embed (example with OpenAI)
+client = OpenAI()
+embeddings = [client.embeddings.create(model="text-embedding-3-large", input=d["text"]).data[0].embedding for d in docs]
+
+# Next: upsert to Azure AI Search / Qdrant / Weaviate...
+```
+
+---
+
+## 📊 Cost & Scaling Notes
+- **Traditional Search**: cheapest, ms latency, keyword only.  
+- **RAG (Hybrid)**: upfront embedding cost (~$26K for 1 TB of text), higher infra, but best semantic accuracy.  
+- **LLM-only Search**: impractical for >GB data.  
+
+---
+
+## ✅ Takeaways
+- Use **Hybrid Retrieval (BM25 + HNSW + RRF + Reranker)** → current industry standard.  
+- Preserve **ServiceNow ACLs** by syncing User Criteria into metadata.  
+- Evaluate with **Ragas/DeepEval** before rollout.  
+- Start simple (Azure AI Search or Qdrant) → scale up later.  
+
+---
+
+✍️ *This write-up is part of my experiments with building enterprise-ready, RAG-powered digital workplace solutions. Contributions & suggestions welcome!*  
